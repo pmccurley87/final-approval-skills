@@ -25,16 +25,91 @@ Common examples:
 - Charge customer → customer, amount, currency, description
 - Post to social media → platform, content, images, schedule
 
-### 2. Create the channel
+### 2. Authenticate (device flow)
 
-The developer must be logged in. Use the dashboard at `http://localhost:5173/dashboard/channels/new` or call the API.
+The rest of this skill needs a bearer token. Tokens are stored at `~/.finalapproval/token.json`.
+
+The default host is `https://www.finalapproval.ai`. Override with `FINALAPPROVAL_URL` (e.g. `http://localhost:3001` for local dev).
+
+**2a. Check for an existing session:**
+
+```bash
+FINALAPPROVAL_URL="${FINALAPPROVAL_URL:-https://www.finalapproval.ai}"
+
+if [ -f ~/.finalapproval/token.json ]; then
+  TOKEN=$(jq -r .token ~/.finalapproval/token.json)
+  # Verify it still works
+  STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+    -H "Authorization: Bearer $TOKEN" \
+    "$FINALAPPROVAL_URL/api/channels")
+  [ "$STATUS" = "200" ] && echo "session ok" || rm ~/.finalapproval/token.json
+fi
+```
+
+If the file is missing, invalid, or the verify call returns 401, continue to 2b.
+
+**2b. Request a device code:**
+
+Better Auth exposes an OAuth 2.0 device-authorization flow under `/api/auth/device/*`.
+
+```bash
+ORIGIN="$FINALAPPROVAL_URL"  # Better Auth requires an Origin header
+
+RESP=$(curl -s -X POST "$FINALAPPROVAL_URL/api/auth/device/code" \
+  -H "Content-Type: application/json" \
+  -H "Origin: $ORIGIN" \
+  -d '{"client_id":"finalapproval-cli"}')
+
+DEVICE_CODE=$(echo "$RESP" | jq -r .device_code)
+URL=$(echo "$RESP" | jq -r .verification_uri_complete)
+INTERVAL=$(echo "$RESP" | jq -r .interval)
+```
+
+Show the developer `$URL` and ask them to open it in a browser. They'll sign in if needed, then click "Approve and connect".
+
+**2c. Poll for the token:**
+
+```bash
+while true; do
+  RESP=$(curl -s -X POST "$FINALAPPROVAL_URL/api/auth/device/token" \
+    -H "Content-Type: application/json" \
+    -H "Origin: $ORIGIN" \
+    -d "{
+      \"grant_type\":\"urn:ietf:params:oauth:grant-type:device_code\",
+      \"device_code\":\"$DEVICE_CODE\",
+      \"client_id\":\"finalapproval-cli\"
+    }")
+
+  ERR=$(echo "$RESP" | jq -r '.error // empty')
+  case "$ERR" in
+    authorization_pending) sleep "$INTERVAL" ;;
+    slow_down)             INTERVAL=$((INTERVAL * 2)); sleep "$INTERVAL" ;;
+    expired_token|access_denied)
+      echo "Device code $ERR — ask the developer to retry."; exit 1 ;;
+    "")
+      TOKEN=$(echo "$RESP" | jq -r .access_token)
+      mkdir -p ~/.finalapproval
+      echo "{\"token\":\"$TOKEN\"}" > ~/.finalapproval/token.json
+      chmod 600 ~/.finalapproval/token.json
+      break ;;
+    *)
+      echo "Unexpected error: $ERR"; exit 1 ;;
+  esac
+done
+```
+
+All future API calls in this skill use `Authorization: Bearer $TOKEN`.
+
+### 3. Create the channel
 
 If the developer already knows their webhook URL, include it now. Otherwise, skip it — webhooks can be added later from the channel settings page.
 
 ```bash
-curl -X POST http://localhost:3001/api/channels \
+TOKEN=$(jq -r .token ~/.finalapproval/token.json)
+
+curl -s -X POST "$FINALAPPROVAL_URL/api/channels" \
+  -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
-  -H "Cookie: <session_cookie>" \
   -d '{
     "name": "Send Email",
     "description": "Approve outgoing emails before sending",
@@ -43,10 +118,12 @@ curl -X POST http://localhost:3001/api/channels \
 ```
 
 Response includes:
-- `api_key` (`fa_...`) — for submitting approvals. Shown once.
-- `webhook_secret` (`whsec_...`) — for verifying webhook signatures. Only returned when `webhook_url` is provided. Shown once.
+- `api_key` (`fa_...`) — for submitting approvals. **Shown once.**
+- `webhook_secret` (`whsec_...`) — for verifying webhook signatures. Only returned when `webhook_url` is provided. **Shown once.**
 
-### 3. Save credentials
+### 4. Save channel credentials
+
+The bearer token already lives at `~/.finalapproval/token.json`. The channel-scoped `fa_` key and webhook secret belong in the **project's** `.env`:
 
 Check the developer's `.env` first — they may already have `FINALAPPROVAL_API_KEY` from a previous channel. Each channel gets its own key, so use a channel-specific name if multiple channels exist (e.g. `FINALAPPROVAL_EMAIL_API_KEY`).
 
@@ -57,11 +134,11 @@ FINALAPPROVAL_API_KEY=fa_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 FINALAPPROVAL_WEBHOOK_SECRET=whsec_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 ```
 
-The webhook secret is only present if a webhook URL was provided in step 2. If not, skip it — it will be generated when the developer adds a webhook later via channel settings.
+The webhook secret is only present if a webhook URL was provided in step 3. If not, skip it — it will be generated when the developer adds a webhook later via channel settings.
 
 Both credentials are shown once and cannot be retrieved again. If lost, the API key requires creating a new channel; the webhook secret can be regenerated by updating the webhook URL in channel settings.
 
-### 4. Build the approval submission function
+### 5. Build the approval submission function
 
 This is the core integration. Create a single function that:
 1. Builds a consistent HTML body from the action's runtime data
@@ -110,7 +187,8 @@ async function submitForApproval(data: EmailApprovalData): Promise<string> {
       </details>
     </div>`;
 
-  const response = await fetch("http://localhost:3001/api/v1/approvals", {
+  const baseUrl = process.env.FINALAPPROVAL_URL ?? "https://www.finalapproval.ai";
+  const response = await fetch(`${baseUrl}/api/v1/approvals`, {
     method: "POST",
     headers: {
       "Authorization": `Bearer ${process.env.FINALAPPROVAL_API_KEY}`,
@@ -148,12 +226,12 @@ const approvalId = await submitForApproval({
   priority: "high",
 });
 // Action is now pending — human reviews in dashboard
-// If a webhook is wired (step 5), it fires when the human decides
+// If a webhook is wired (step 6), it fires when the human decides
 ```
 
-### 5. Wire up the webhook receiver (if webhook is configured)
+### 6. Wire up the webhook receiver (if webhook is configured)
 
-**Skip this step if no webhook URL was set in step 2.** The developer can add one later from the channel's settings page in the dashboard, and come back to wire this up then. Without a webhook, the developer would poll `GET /api/v1/approvals/:id` or check the dashboard manually.
+**Skip this step if no webhook URL was set in step 3.** The developer can add one later from the channel's settings page in the dashboard, and come back to wire this up then. Without a webhook, the developer would poll `GET /api/v1/approvals/:id` or check the dashboard manually.
 
 When a human approves or denies, FinalApproval POSTs the decision to the webhook URL. **This is where the gated action actually runs.**
 
@@ -217,7 +295,7 @@ app.post("/webhooks/finalapproval", express.raw({ type: "application/json" }), (
 });
 ```
 
-**The webhook handler closes the loop.** The submission function (step 4) sends the request; the webhook handler (this step) receives the decision and runs the action. Both use `approval.data` as the shared contract — the structured JSON that carries the runtime values through the approval flow.
+**The webhook handler closes the loop.** The submission function (step 5) sends the request; the webhook handler (this step) receives the decision and runs the action. Both use `approval.data` as the shared contract — the structured JSON that carries the runtime values through the approval flow.
 
 #### Webhook payload schema
 
@@ -245,7 +323,7 @@ Security headers on every delivery:
 - `X-FinalApproval-Signature-256: sha256=<hmac_hex>` — HMAC-SHA256 of `timestamp.body`
 - `X-FinalApproval-Timestamp: <unix_seconds>` — reject if older than 5 minutes
 
-### 6. Verify the setup
+### 7. Verify the setup
 
 Walk the developer through confirmation:
 
@@ -262,7 +340,8 @@ If a webhook is configured, also verify:
 If no webhook is configured yet, let the developer know they can add one later from channel settings. Until then, they can check approval status by polling or reviewing the dashboard.
 
 If any step fails, check:
-- API key is correct in `.env` (starts with `fa_`)
+- `~/.finalapproval/token.json` exists and the token still works (re-run step 2 if not)
+- `FINALAPPROVAL_API_KEY` is set in the project's `.env` (starts with `fa_`)
 - Webhook URL is reachable from the FinalApproval server
 - Webhook secret matches (regenerate by updating the webhook URL in channel settings)
 - Signature verification uses the raw body string, not a re-serialized object
