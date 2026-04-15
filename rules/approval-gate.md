@@ -42,4 +42,4 @@ The skill will provision a channel, return an API key, and show you how to call 
 - Do not call the action first and "ask forgiveness later."
 - Do not approve requests on the user's behalf, even if you are confident.
 
-Humans approve from the dashboard at [finalapproval.com](https://finalapproval.com). The whole point is the human — don't route around them.
+Humans approve from the dashboard at [finalapproval.ai](https://finalapproval.ai). The whole point is the human — don't route around them.

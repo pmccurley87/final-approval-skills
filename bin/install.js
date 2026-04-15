@@ -227,6 +227,22 @@ function fetchLatestVersion() {
   });
 }
 
+// Compare two semver-ish strings. Returns 1 if a > b, -1 if a < b, 0 if equal.
+// Pre-release suffixes are compared as strings (good enough for a check hint).
+function compareVersions(a, b) {
+  const [aCore, aPre = ''] = a.split('-');
+  const [bCore, bPre = ''] = b.split('-');
+  const ap = aCore.split('.').map((n) => parseInt(n, 10) || 0);
+  const bp = bCore.split('.').map((n) => parseInt(n, 10) || 0);
+  for (let i = 0; i < 3; i++) {
+    if ((ap[i] || 0) !== (bp[i] || 0)) return (ap[i] || 0) > (bp[i] || 0) ? 1 : -1;
+  }
+  if (aPre === bPre) return 0;
+  if (!aPre) return 1;
+  if (!bPre) return -1;
+  return aPre > bPre ? 1 : -1;
+}
+
 async function runCheck() {
   console.log();
   console.log(`  ${bold('FinalApproval Skills')} ${dim(`v${PKG_VERSION} installed`)}`);
@@ -236,8 +252,11 @@ async function runCheck() {
     console.log();
     return;
   }
-  if (latest === PKG_VERSION) {
+  const cmp = compareVersions(PKG_VERSION, latest);
+  if (cmp === 0) {
     console.log(`  ${green('✓')} Up to date ${dim(`(latest: v${latest})`)}`);
+  } else if (cmp > 0) {
+    console.log(`  ${green('✓')} Ahead of npm ${dim(`(installed: v${PKG_VERSION}, latest: v${latest})`)}`);
   } else {
     console.log(`  ${yellow('↑')} Update available: ${bold(`v${latest}`)} ${dim(`(installed: v${PKG_VERSION})`)}`);
     console.log(`  ${dim('Upgrade:')} ${cyan('npx final-approval-skills@latest')}`);

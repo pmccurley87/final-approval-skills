@@ -47,8 +47,8 @@ Describe the approval you need in one sentence. The skill provisions a FinalAppr
 
 ## Docs & dashboard
 
-- Dashboard: **[finalapproval.com](https://finalapproval.com)**
-- Install guide: **[finalapproval.com/install](https://finalapproval.com/install)**
+- Dashboard: **[finalapproval.ai](https://finalapproval.ai)**
+- Install guide: **[finalapproval.ai/install](https://finalapproval.ai/install)**
 - Webhook verification (Node + Python drop-ins): in the dashboard under each channel
 
 ---

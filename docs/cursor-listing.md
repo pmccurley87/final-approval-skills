@@ -39,7 +39,7 @@ Agents are fast. Mistakes made at agent speed are expensive. FinalApproval gives
 2. The skill wires up a channel in your FinalApproval dashboard and prints the code snippet for the gate point
 3. Paste the snippet, commit, done — next time your agent hits that code path, it waits for you
 
-Dashboard: [finalapproval.com](https://finalapproval.com) · Docs: [finalapproval.com/install](https://finalapproval.com/install)
+Dashboard: [finalapproval.ai](https://finalapproval.ai) · Docs: [finalapproval.ai/install](https://finalapproval.ai/install)
 
 ## Screenshots (checklist)
 
@@ -50,7 +50,7 @@ Dashboard: [finalapproval.com](https://finalapproval.com) · Docs: [finalapprova
 
 ## Preview image
 
-1280×720. Source: reuse the `/designed-for-agents` landing hero from finalapproval.com — already on-brand, already has the pitch text laid out.
+1280×720. Source: reuse the `/designed-for-agents` landing hero from finalapproval.ai — already on-brand, already has the pitch text laid out.
 
 ## Icon
 

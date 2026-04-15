@@ -1,13 +1,13 @@
 {
-  "name": "final-approval",
+  "name": "finalapproval",
   "displayName": "FinalApproval",
   "version": "0.4.0",
   "description": "Human-in-the-loop approvals for AI agents. Gate irreversible actions behind a human yes/no.",
   "author": {
     "name": "FinalApproval",
-    "url": "https://finalapproval.com"
+    "url": "https://finalapproval.ai"
   },
-  "homepage": "https://finalapproval.com",
+  "homepage": "https://finalapproval.ai",
   "repository": {
     "type": "git",
     "url": "https://github.com/pmccurley87/final-approval-skills"
