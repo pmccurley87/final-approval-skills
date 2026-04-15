@@ -1,0 +1,37 @@
+{
+  "name": "finalapproval",
+  "displayName": "FinalApproval",
+  "version": "0.4.0",
+  "description": "Human-in-the-loop approvals for AI agents. Gate irreversible actions behind a human yes/no.",
+  "author": {
+    "name": "FinalApproval",
+    "url": "https://finalapproval.com"
+  },
+  "homepage": "https://finalapproval.com",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/pmccurley87/final-approval-skills"
+  },
+  "license": "MIT",
+  "keywords": [
+    "approval",
+    "human-in-the-loop",
+    "agent-safety",
+    "webhook",
+    "deploy-gate",
+    "review"
+  ],
+  "rules": [
+    "rules/approval-gate.md"
+  ],
+  "skills": [
+    {
+      "name": "create-channel",
+      "path": "skills/create-channel/SKILL.md"
+    }
+  ],
+  "assets": {
+    "icon": ".cursor-plugin/icon.svg",
+    "preview": ".cursor-plugin/preview.png"
+  }
+}
