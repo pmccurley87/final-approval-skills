@@ -3,16 +3,22 @@
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
+const https = require('https');
 
 const SKILLS_DIR = path.join(__dirname, '..', 'skills');
 const SKILL_NAMES = fs.readdirSync(SKILLS_DIR).filter((d) =>
   fs.existsSync(path.join(SKILLS_DIR, d, 'SKILL.md'))
 );
 
+const PKG = require('../package.json');
+const PKG_NAME = PKG.name;
+const PKG_VERSION = PKG.version;
+
 const dim = (s) => `\x1b[2m${s}\x1b[0m`;
 const bold = (s) => `\x1b[1m${s}\x1b[0m`;
 const green = (s) => `\x1b[32m${s}\x1b[0m`;
 const cyan = (s) => `\x1b[36m${s}\x1b[0m`;
+const yellow = (s) => `\x1b[33m${s}\x1b[0m`;
 
 // ── Tool definitions ──
 
@@ -51,6 +57,7 @@ const TOOLS = [
 
 const args = process.argv.slice(2);
 const isGlobal = args.includes('--global') || args.includes('-g');
+const isCheck = args.includes('--check');
 
 // ── SKILL.md parsing ──
 
@@ -194,14 +201,62 @@ function detectTools(cwd) {
   return detected;
 }
 
+// ── Version check (npm registry) ──
+
+function fetchLatestVersion() {
+  return new Promise((resolve) => {
+    const req = https.get(
+      `https://registry.npmjs.org/${PKG_NAME}/latest`,
+      { headers: { accept: 'application/json' }, timeout: 3000 },
+      (res) => {
+        if (res.statusCode !== 200) {
+          res.resume();
+          return resolve(null);
+        }
+        let body = '';
+        res.setEncoding('utf8');
+        res.on('data', (chunk) => { body += chunk; });
+        res.on('end', () => {
+          try { resolve(JSON.parse(body).version || null); }
+          catch { resolve(null); }
+        });
+      },
+    );
+    req.on('error', () => resolve(null));
+    req.on('timeout', () => { req.destroy(); resolve(null); });
+  });
+}
+
+async function runCheck() {
+  console.log();
+  console.log(`  ${bold('FinalApproval Skills')} ${dim(`v${PKG_VERSION} installed`)}`);
+  const latest = await fetchLatestVersion();
+  if (!latest) {
+    console.log(`  ${dim('Could not reach the npm registry — check your network.')}`);
+    console.log();
+    return;
+  }
+  if (latest === PKG_VERSION) {
+    console.log(`  ${green('✓')} Up to date ${dim(`(latest: v${latest})`)}`);
+  } else {
+    console.log(`  ${yellow('↑')} Update available: ${bold(`v${latest}`)} ${dim(`(installed: v${PKG_VERSION})`)}`);
+    console.log(`  ${dim('Upgrade:')} ${cyan('npx final-approval-skills@latest')}`);
+  }
+  console.log();
+}
+
 // ── Main ──
 
 function main() {
+  if (isCheck) {
+    return runCheck();
+  }
+
   const cwd = process.cwd();
 
   console.log();
-  console.log(`  ${bold('FinalApproval Skills')}`);
-  console.log(`  ${dim('Community skills for AI coding tools')}`);
+  console.log(`  ${bold('FinalApproval Skills')} ${dim(`v${PKG_VERSION}`)}`);
+  console.log(`  ${dim('Community skills for AI coding tools — re-run any time to update')}`);
   console.log();
 
   if (isGlobal) {

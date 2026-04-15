@@ -1,43 +1,74 @@
 # FinalApproval Skills
 
-Skills for adding human-in-the-loop approval to AI agent workflows.
+**Human-in-the-loop approvals for AI agents.**
+Before your agent does something irreversible, it asks. You approve from a dashboard, a webhook fires, the agent continues.
+
+---
 
 ## Install
 
-### Claude Code (recommended)
+**Claude Code** (recommended)
 
 ```
 /plugin marketplace add pmccurley87/final-approval-skills
-/plugin install create-channel@final-approval-skills
+/plugin install finalapproval@final-approval-skills
 ```
 
-### All tools (npx)
-
-Auto-detects Claude Code, Cursor, Windsurf, or Codex and installs in the right format:
+**Cursor, Windsurf, Codex — or any project**
 
 ```bash
 npx final-approval-skills
 ```
 
-Global install (available in all projects):
+Auto-detects your tool and installs in the right format. Add `--global` to install for all projects.
+
+**Check for updates**
 
 ```bash
-npx final-approval-skills --global
+npx final-approval-skills --check
 ```
 
-## Available Skills
+Re-run `npx final-approval-skills` to upgrade — it always fetches the latest.
 
-| Skill | Description |
-|---|---|
-| `create-channel` | Create a FinalApproval channel to gate an agent action behind human approval |
+---
 
-## Contributing a Skill
+## What the skill does
+
+Describe the approval you need in one sentence. The skill provisions a FinalApproval channel — the dashboard, the API key, the optional webhook — and hands your agent the integration snippet.
+
+| Tool          | Invoke                                         |
+| ------------- | ---------------------------------------------- |
+| Claude Code   | `/create-channel`                              |
+| Cursor        | `@create-channel`                              |
+| Windsurf      | `"create an approval channel for …"`           |
+| Codex         | `$create-channel`                              |
+
+---
+
+## Docs & dashboard
+
+- Dashboard: **[finalapproval.com](https://finalapproval.com)**
+- Install guide: **[finalapproval.com/install](https://finalapproval.com/install)**
+- Webhook verification (Node + Python drop-ins): in the dashboard under each channel
+
+---
+
+## Available skills
+
+| Skill            | Description                                                                               |
+| ---------------- | ----------------------------------------------------------------------------------------- |
+| `create-channel` | Create a FinalApproval channel to gate an agent action behind human approval              |
+
+More coming — `approval-policy` (routing, auto-approve, multi-signer) is next.
+
+---
+
+## Contributing a skill
 
 1. Fork this repo
-2. Create your skill directory under `skills/your-skill-name/`
-3. Add a `SKILL.md` with YAML frontmatter + instructions
-4. (Optional) Add a `templates/` directory for template files
-5. Open a PR — we'll set up the marketplace plugin entry
+2. Add `skills/<your-skill-name>/SKILL.md` with YAML frontmatter + instructions
+3. (Optional) Add a `templates/` directory for template files
+4. Open a PR
 
 ### SKILL.md format
 
@@ -52,6 +83,8 @@ argument-hint: [what arguments the skill accepts]
 
 Instructions for the AI to follow when this skill is invoked.
 ```
+
+---
 
 ## License
 
