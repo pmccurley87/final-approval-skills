@@ -29,7 +29,7 @@
     <!-- Title -->
     <text x="82" y="26" font-family="Impact, 'Arial Narrow Bold', sans-serif"
           font-size="30" fill="#ffffff" letter-spacing="0.06em">FINAL</text>
-    <g transform="translate(210, 0)">
+    <g transform="translate(170, 0)">
       <rect x="0" y="-2" width="180" height="40" rx="4" fill="none" stroke="#f54e00" stroke-width="2.5"/>
       <text x="12" y="28" font-family="Impact, 'Arial Narrow Bold', sans-serif"
             font-size="28" fill="#f54e00" letter-spacing="0.04em">APPROVAL</text>
