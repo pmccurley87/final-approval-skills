@@ -5,7 +5,7 @@
   },
   "metadata": {
     "description": "Skills for adding human-in-the-loop approval to AI agent workflows",
-    "version": "0.5.2",
+    "version": "0.5.3",
     "pluginRoot": "./plugins"
   },
   "plugins": [

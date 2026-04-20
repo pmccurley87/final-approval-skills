@@ -1,7 +1,7 @@
 {
   "name": "finalapproval",
   "displayName": "FinalApproval",
-  "version": "0.5.2",
+  "version": "0.5.3",
   "description": "Human-in-the-loop approvals for AI agents. Gate irreversible actions behind a human yes/no.",
   "author": {
     "name": "FinalApproval",

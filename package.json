@@ -1,6 +1,6 @@
 {
   "name": "final-approval-skills",
-  "version": "0.5.2",
+  "version": "0.5.3",
   "description": "Community skills for Claude Code, Cursor, Windsurf, and Codex — powered by FinalApproval",
   "bin": {
     "final-approval-skills": "./bin/install.js"
